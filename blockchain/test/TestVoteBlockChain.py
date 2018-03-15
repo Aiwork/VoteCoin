@@ -1,18 +1,25 @@
 from time import time
 from unittest import TestCase
 import numpy as np
+import os
 
-from blockchain.Block import Block
+from blockchain.Database import Database
 from blockchain.VoteBlockChain import VoteBlockChain
 
+DEFAULT_PREVHASH = b'\x00' * 32
+VOTE_DB = 'test_vote_db.pkl'
 
 class TestVoteBlockChain(TestCase):
     def setUp(self):
-        self.vote_chain = VoteBlockChain()
+        self.vote_chain = VoteBlockChain(database=Database(VOTE_DB))
+
+    def tearDown(self):
+        if os.path.exists(VOTE_DB):
+            os.remove(VOTE_DB)
 
     def test_adding_block(self):
-        self.vote_chain.add_block(proof_of_work=True, previous_hash='test123')
-        self.assertEqual(len(self.vote_chain.blocks), 1)
+        self.vote_chain.add_block(self.get_random_block())
+        self.assertEqual(self.vote_chain.blocks_count, 1)
 
     def get_random_block(self, block_number=None, prevhash=None):
         block = {
@@ -21,26 +28,22 @@ class TestVoteBlockChain(TestCase):
             'timestamp': time(),
             'transactions': np.random.randint(2000),
             'proof': True,
-            'prevhash': prevhash if prevhash is not None else b'\x00' * 32,
+            'prevhash': prevhash if prevhash is not None else DEFAULT_PREVHASH,
         }
-        block_object = Block(block['timestamp'],
-                             block['number'],
-                             block['prevhash'])
-        return block_object
+        return block
 
     def test_block_hash(self):
-        hash_binary = self.vote_chain.hash(self.get_random_block())
+        dict_block = self.get_random_block()
+        block = self.vote_chain.get_block_from_dict(dict_block)
+        hash_binary = self.vote_chain.hash(block)
         self.assertEqual(len(hash_binary), 32)
 
     def test_persistance_block_to_database(self):
         self.generate_blocks()
 
-
     def generate_blocks(self):
         blocks_number = 20
-        prevhash = b'\x00' * 32
         for i in range(blocks_number):
-            block = self.get_random_block(i, prevhash)
-            signed_block = self.vote_chain.add_block(block)
-            prevhash = signed_block['prevhash']
-        self.assertEqual(len(self.vote_chain.blocks), 20)
+            block = self.get_random_block(i)
+            self.vote_chain.add_block(block)
+        self.assertEqual(self.vote_chain.blocks_count, 20)
