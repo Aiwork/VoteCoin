@@ -67,6 +67,6 @@ class TestVoteBlockChain(TestCase):
         self.assertEqual(len(self.vote_chain.get_chain()), 10)
         self.assertEqual(len(chain), 10)
         for block, i in zip(chain, range(len(chain)+1)):
-            if i ==0:
+            if i is 0:
                 continue
             self.assertEqual(block.hash, chain[i].hash)
