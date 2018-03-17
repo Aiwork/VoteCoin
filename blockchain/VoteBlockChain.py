@@ -1,5 +1,7 @@
 import logging
 from time import time
+
+import itertools
 import rlp
 from ethereum import utils
 from sklearn.externals import joblib
@@ -23,7 +25,7 @@ class VoteBlockChain(object):
         })
         self.database = database if database is not None \
             else Database(DEFAULT_CONFIG['database_filename'])
-        self.blocks_count = 0 if self.database is None \
+        self.blocks_count = 1 if self.database is None \
             else self.database.get_index_count()
         self.state = None
         self.current_block_transactions = []
@@ -68,4 +70,22 @@ class VoteBlockChain(object):
             logging.info('Failed to get'
                          ' block={hash} error={error}'.format(hash=blockhash,
                                                               error=e))
+            return None
+
+    def get_chain(self, frm=None, to=2 ** 63 - 1):
+        if frm is None:
+            frm = 1
+            to = self.blocks_count + 1
+        chain = []
+        for i in itertools.islice(itertools.count(), frm, to):
+            h = self.get_blockhash_by_number(i)
+            if not h:
+                return chain
+            chain.append(self.get_block(h))
+        return chain
+
+    def get_blockhash_by_number(self, number):
+        try:
+            return self.database.get(b'block:%d' % number)
+        except Exception:
             return None

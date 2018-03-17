@@ -9,6 +9,7 @@ from blockchain.VoteBlockChain import VoteBlockChain
 DEFAULT_PREVHASH = b'\x00' * 32
 VOTE_DB = 'test_vote_db.pkl'
 
+
 class TestVoteBlockChain(TestCase):
     def setUp(self):
         self.vote_chain = VoteBlockChain(database=Database(VOTE_DB))
@@ -49,7 +50,17 @@ class TestVoteBlockChain(TestCase):
         self.generate_blocks()
 
     def test_get_block(self):
-        block_dict = self.get_random_block()
-        block = self.vote_chain.add_block(block_dict)
+        block = self.append_random_block()
         block_found = self.vote_chain.get_block(block.hash)
         self.assertEqual(block.hash, block_found.hash)
+
+    def append_random_block(self):
+        block_dict = self.get_random_block()
+        block = self.vote_chain.add_block(block_dict)
+        return block
+
+    def test_get_chain(self):
+        length_chain = 10
+        for i in range(length_chain):
+            self.append_random_block()
+        self.assertEqual(len(self.vote_chain.get_chain()), 10)
