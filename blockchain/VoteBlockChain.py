@@ -1,3 +1,4 @@
+import logging
 from time import time
 import rlp
 from ethereum import utils
@@ -33,7 +34,7 @@ class VoteBlockChain(object):
         block_dict.update({
             'number': self.blocks_count + 1,
             'timestamp': time(),
-            'prevhash': self.hash(self.head_hash)
+            'prevhash': self.head_hash
         })
         block = self.get_block_from_dict(block_dict)
         # Reset the current list of transactions
@@ -55,5 +56,17 @@ class VoteBlockChain(object):
     def persist_block(self, block):
         block_num = b'block:%d' % self.blocks_count
         self.database.put(block_num, block.hash)
+        self.database.put(block.hash, rlp.encode(block))
         self.database.put('head_hash', block.hash)
         self.database.commit()
+
+    def get_block(self, blockhash):
+        try:
+            block_rlp = self.database.get(blockhash)
+
+            return rlp.decode(block_rlp, Block)
+        except Exception as e:
+            logging.info('Failed to get'
+                         ' block={hash} error={error}'.format(hash=blockhash,
+                                                              error=e))
+            return None

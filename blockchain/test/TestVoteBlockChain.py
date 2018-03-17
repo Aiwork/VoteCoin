@@ -17,10 +17,6 @@ class TestVoteBlockChain(TestCase):
         if os.path.exists(VOTE_DB):
             os.remove(VOTE_DB)
 
-    def test_adding_block(self):
-        self.vote_chain.add_block(self.get_random_block())
-        self.assertEqual(self.vote_chain.blocks_count, 1)
-
     def get_random_block(self, block_number=None, prevhash=None):
         block = {
             'number': block_number if block_number is not
@@ -32,6 +28,17 @@ class TestVoteBlockChain(TestCase):
         }
         return block
 
+    def generate_blocks(self):
+        blocks_number = 20
+        for i in range(blocks_number):
+            block = self.get_random_block(i)
+            self.vote_chain.add_block(block)
+        self.assertEqual(self.vote_chain.blocks_count, 20)
+
+    def test_adding_block(self):
+        self.vote_chain.add_block(self.get_random_block())
+        self.assertEqual(self.vote_chain.blocks_count, 1)
+
     def test_block_hash(self):
         dict_block = self.get_random_block()
         block = self.vote_chain.get_block_from_dict(dict_block)
@@ -41,9 +48,8 @@ class TestVoteBlockChain(TestCase):
     def test_persistance_block_to_database(self):
         self.generate_blocks()
 
-    def generate_blocks(self):
-        blocks_number = 20
-        for i in range(blocks_number):
-            block = self.get_random_block(i)
-            self.vote_chain.add_block(block)
-        self.assertEqual(self.vote_chain.blocks_count, 20)
+    def test_get_block(self):
+        block_dict = self.get_random_block()
+        block = self.vote_chain.add_block(block_dict)
+        block_found = self.vote_chain.get_block(block.hash)
+        self.assertEqual(block.hash, block_found.hash)
