@@ -1,17 +1,11 @@
 import rlp
 from ethereum import utils
-from ethereum.utils import hash32
 from rlp.utils_py3 import encode_hex
 
 GENESIS_PREVHASH = b'\x00' * 32
 
 
 class Block(rlp.Serializable):
-    # fields = (
-    #     ('prevhash', hash32),
-    #     ('nonce', float),
-    #     ('transactions', list),
-    # )
 
     def __init__(self,
                  nonce='',
@@ -42,7 +36,7 @@ class Block(rlp.Serializable):
             return getattr(self.header, name)
 
     def __eq__(self, other):
-        """Two blockheader are equal iff they have the same hash."""
+        """Two blocks are equal iff they have the same hash."""
         return isinstance(other, Block) and self.hash == other.hash
 
     def __hash__(self):

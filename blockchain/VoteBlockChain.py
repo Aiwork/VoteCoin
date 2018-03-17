@@ -63,7 +63,6 @@ class VoteBlockChain(object):
     def get_block(self, blockhash):
         try:
             block_rlp = self.database.get(blockhash)
-
             return rlp.decode(block_rlp, Block)
         except Exception as e:
             logging.info('Failed to get'
