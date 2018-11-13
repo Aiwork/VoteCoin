@@ -1,6 +1,7 @@
 import os
 from sklearn.externals import joblib
 
+
 def get_filepath(filepath):
     return os.path.abspath(os.path.join(os.path.dirname(__file__),
                                         filepath))

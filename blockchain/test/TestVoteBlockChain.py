@@ -1,14 +1,30 @@
-from time import time
 from unittest import TestCase
 import numpy as np
 import os
 
+from blockchain.Block import Block
 from blockchain.Database import Database
+from blockchain.Transaction import Transaction
 from blockchain.VoteBlockChain import VoteBlockChain
 
 DEFAULT_PREVHASH = b'\x00' * 32
 VOTE_DB = 'test_vote_db.pkl'
 
+
+def get_transaction(index):
+    return Transaction(meta={index: index}).to_dict()
+
+
+def get_transactions(max_transactions):
+    return [get_transaction(i) for i in range(max_transactions)]
+
+
+def get_random_block(block_number=None, prevhash=None):
+    block_number = block_number if block_number is not None else np.random.randint(
+        2000)
+    block = Block().to_dict(block_number=block_number)
+    block['transactions'] = get_transactions(2000)
+    return block
 
 class TestVoteBlockChain(TestCase):
     def setUp(self):
@@ -18,15 +34,16 @@ class TestVoteBlockChain(TestCase):
         if os.path.exists(VOTE_DB):
             os.remove(VOTE_DB)
 
+    def get_transaction(self, index):
+        return Transaction(meta={index: index}).to_dict()
+
+    def get_transactions(self, max_transactions):
+        return [self.get_transaction(i) for i in range(max_transactions)]
+
     def get_random_block(self, block_number=None, prevhash=None):
-        block = {
-            'number': block_number if block_number is not
-                                      None else np.random.randint(2000),
-            'timestamp': time(),
-            'transactions': np.random.randint(2000),
-            'proof': True,
-            'prevhash': prevhash if prevhash is not None else DEFAULT_PREVHASH,
-        }
+        block_number = block_number if block_number is not None else np.random.randint(2000)
+        block = Block().to_dict(block_number=block_number)
+        block['transactions'] = self.get_transactions(2000)
         return block
 
     def generate_blocks(self):
@@ -70,3 +87,16 @@ class TestVoteBlockChain(TestCase):
             if i is 0:
                 continue
             self.assertEqual(block.hash, chain[i].hash)
+
+    def test_get_head_block(self):
+        block = self.append_random_block()
+        block_found = self.vote_chain.get_head_block()
+        self.assertEqual(block.hash, block_found.hash)
+
+    def test_append_transaction(self):
+        block = self.append_random_block()
+        transaction = Transaction(meta={'vote_value': 'ron_huldai'})
+        self.vote_chain.append_transaction(transaction)
+        head_block = self.vote_chain.get_head_block()
+        print('head_block.transactions={}'.format(head_block.transactions))
+        self.assertEqual(len(head_block.transactions), 1)

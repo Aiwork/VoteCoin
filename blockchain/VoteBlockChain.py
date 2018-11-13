@@ -4,8 +4,8 @@ from time import time
 import itertools
 import rlp
 from ethereum import utils
-from sklearn.externals import joblib
 
+from blockchain.Transaction import Transaction
 from blockchain.Block import Block
 from blockchain.Database import Database
 
@@ -15,7 +15,7 @@ DEFAULT_CONFIG = {
 }
 
 DEFAULT_PREVHASH = b'\x00' * 32
-
+HEAD_HASH_NAME = 'head_hash'
 
 class VoteBlockChain(object):
     def __init__(self, genesis_block={}, concensus_strategy='vote',
@@ -47,9 +47,9 @@ class VoteBlockChain(object):
         return block
 
     def get_block_from_dict(self, block_dict):
-        return Block(block_dict['timestamp'],
-                     block_dict['number'],
-                     block_dict['prevhash'])
+        return Block(nonce=block_dict['timestamp'],
+                     number=block_dict['number'],
+                     prevhash=block_dict['prevhash'])
 
     @staticmethod
     def hash(block):
@@ -59,7 +59,7 @@ class VoteBlockChain(object):
         block_num = b'block:%d' % self.blocks_count
         self.database.put(block_num, block.hash)
         self.database.put(block.hash, rlp.encode(block))
-        self.database.put('head_hash', block.hash)
+        self.database.put(HEAD_HASH_NAME, block.hash)
         self.database.commit()
 
     def get_block(self, blockhash):
@@ -89,3 +89,18 @@ class VoteBlockChain(object):
             return self.database.get(b'block:%d' % number)
         except Exception:
             return None
+
+    def get_head_block(self):
+        block_hash = self.database.get(HEAD_HASH_NAME)
+        return self.get_block(block_hash)
+
+    def append_meta_transaction(self, meta):
+        return self.append_transaction(Transaction(meta=meta))
+
+    def append_transaction(self, transaction):
+        logging.info('Applying block transactions')
+        head_block = self.get_head_block()
+        self.current_block_transactions.append(transaction.to_dict())
+        logging.info('Checking delegation for vote block approval')
+        head_block.add_transaction(transaction)
+        self.persist_block(head_block)
